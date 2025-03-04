@@ -6,3 +6,4 @@ llama-index-embeddings-gemini
 python-dotenv
 streamlit
 sqlalchemy
+llama-index-experimental

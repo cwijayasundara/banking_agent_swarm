@@ -38,6 +38,7 @@ def create_banking_customer_db():
         Column("customer_nationality", String(50)),
         Column("customer_occupation", String(50)),
         Column("customer_income", String(50)),
+        Column("account_balance", String(50)),
         
     )
 
@@ -46,11 +47,11 @@ def create_banking_customer_db():
     # Insert data into the customer table. Customers are from the UK
 
     rows = [
-        {"customer_id": "C001", "customer_name": "Alice Johnson", "customer_address": "789 Pine St, Anytown, UK", "customer_phone": "123-456-7892", "customer_email": "alice.johnson@example.com", "customer_dob": "1992-03-20", "customer_gender": "Female", "customer_nationality": "UK", "customer_occupation": "Teacher", "customer_income": "£40000"},
-        {"customer_id": "C002", "customer_name": "Bob Brown", "customer_address": "123 Main St, Anytown, UK", "customer_phone": "123-456-7893", "customer_email": "bob.brown@example.com", "customer_dob": "1985-05-15", "customer_gender": "Male", "customer_nationality": "UK", "customer_occupation": "Doctor", "customer_income": "£70000"},
-        {"customer_id": "C003", "customer_name": "Charlie Davis", "customer_address": "456 Oak Ave, Anycity, UK", "customer_phone": "123-456-7894", "customer_email": "charlie.davis@example.com", "customer_dob": "1990-01-01", "customer_gender": "Male", "customer_nationality": "UK", "customer_occupation": "Software Engineer", "customer_income": "£50000"},
-        {"customer_id": "C004", "customer_name": "Tom Johns", "customer_address": "789 Pine St, Anytown, UK", "customer_phone": "123-456-7895", "customer_email": "tom.johns@example.com", "customer_dob": "1992-03-20", "customer_gender": "Male", "customer_nationality": "UK", "customer_occupation": "Teacher", "customer_income": "£40000"},
-        {"customer_id": "C005", "customer_name": "Jane Fonda", "customer_address": "123 Main St, Anytown, UK", "customer_phone": "123-456-7896", "customer_email": "jane.fonda@example.com", "customer_dob": "1985-05-15", "customer_gender": "Male", "customer_nationality": "UK", "customer_occupation": "Doctor", "customer_income": "£70000"},
+        {"customer_id": "C001", "customer_name": "Alice Johnson", "customer_address": "789 Pine St, Anytown, UK", "customer_phone": "123-456-7892", "customer_email": "alice.johnson@example.com", "customer_dob": "1992-03-20", "customer_gender": "Female", "customer_nationality": "UK", "customer_occupation": "Teacher", "customer_income": "£40000", "account_balance": "£1000"},
+        {"customer_id": "C002", "customer_name": "Bob Brown", "customer_address": "123 Main St, Anytown, UK", "customer_phone": "123-456-7893", "customer_email": "bob.brown@example.com", "customer_dob": "1985-05-15", "customer_gender": "Male", "customer_nationality": "UK", "customer_occupation": "Doctor", "customer_income": "£70000", "account_balance": "£2000"},
+        {"customer_id": "C003", "customer_name": "Charlie Davis", "customer_address": "456 Oak Ave, Anycity, UK", "customer_phone": "123-456-7894", "customer_email": "charlie.davis@example.com", "customer_dob": "1990-01-01", "customer_gender": "Male", "customer_nationality": "UK", "customer_occupation": "Software Engineer", "customer_income": "£50000", "account_balance": "£3000"},
+        {"customer_id": "C004", "customer_name": "Tom Johns", "customer_address": "789 Pine St, Anytown, UK", "customer_phone": "123-456-7895", "customer_email": "tom.johns@example.com", "customer_dob": "1992-03-20", "customer_gender": "Male", "customer_nationality": "UK", "customer_occupation": "Teacher", "customer_income": "£40000", "account_balance": "£4000"},
+        {"customer_id": "C005", "customer_name": "Jane Fonda", "customer_address": "123 Main St, Anytown, UK", "customer_phone": "123-456-7896", "customer_email": "jane.fonda@example.com", "customer_dob": "1985-05-15", "customer_gender": "Male", "customer_nationality": "UK", "customer_occupation": "Doctor", "customer_income": "£70000", "account_balance": "£5000"},
     ]
 
     for row in rows:
