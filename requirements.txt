@@ -1,0 +1,7 @@
+llama-index
+llama-parse
+llama-index-llms-openai
+llama-index-llms-gemini
+llama-index-embeddings-gemini
+python-dotenv
+streamlit
