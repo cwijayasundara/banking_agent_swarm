@@ -103,5 +103,6 @@ async def main():
     print(response_1)
     print(response_2)
     print(response_3)
+
 if __name__ == "__main__":
     asyncio.run(main())
