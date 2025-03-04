@@ -53,7 +53,7 @@ supervisor_agent = ReActAgent(
     ),
     llm=llm_thinking,
     tools=[],
-    can_handoff_to=["InterestRatesAgent", "CustomerDetailsAgent"],
+    can_handoff_to=["InterestRatesAgent", "CustomerDetailsAgent", "PendingTxAgent"],
 )
 
 interest_rates_agent = FunctionAgent(
