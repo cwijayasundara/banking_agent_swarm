@@ -43,7 +43,7 @@ def get_pending_tx_details_from_df(question: str) -> str:
 
 #  agents
 
-supervisor_agent = ReActAgent(
+supervisor_agent = FunctionAgent(
     name="SupervisorAgent",
     description="You are the supervisor agent that oversees the work of the interest rates agent and the customer details agent and decide which agent to hand off control to.",
     system_prompt=(
@@ -51,7 +51,7 @@ supervisor_agent = ReActAgent(
         "You should have at least some notes on a topic before handing off control to the interest rates agent or the customer details agent."
         "If the answer to the users question needs to be derived from the interest rates agent and the customer details agent both, then you should hand off control to both agents, and then combine the results into a single answer."
     ),
-    llm=llm_thinking,
+    llm=llm,
     tools=[],
     can_handoff_to=["InterestRatesAgent", "CustomerDetailsAgent", "PendingTxAgent"],
 )
@@ -64,6 +64,7 @@ interest_rates_agent = FunctionAgent(
     ),
     llm=llm,
     tools=[search_interest_rates],
+    can_handoff_to=["SupervisorAgent"],
 )
 
 customer_details_agent = FunctionAgent(
@@ -72,6 +73,7 @@ customer_details_agent = FunctionAgent(
     system_prompt="You are the CustomerDetailsAgent that can search the bank customer database which contains customer information in a SQL database.",
     llm=llm,
     tools=[search_customer_details],
+    can_handoff_to=["SupervisorAgent"],
 )
 
 pending_tx_agent = FunctionAgent(
@@ -81,6 +83,7 @@ pending_tx_agent = FunctionAgent(
     "You can use this agent to get details of pending transactions for a customer.",
     llm=llm,
     tools=[get_pending_tx_details_from_df],
+    can_handoff_to=["SupervisorAgent"],
 )
 
 agent_workflow = AgentWorkflow(
