@@ -24,10 +24,6 @@ customer_db_query_engine = create_banking_customer_db()
 
 llm = Gemini(model="models/gemini-2.0-flash",api_key=GOOGLE_API_KEY)
 
-# llm_large = Gemini(model="models/gemini-2.0-pro-exp-02-05",api_key=GOOGLE_API_KEY)
-
-# llm_thinking = Gemini(model="models/gemini-2.0-flash-thinking-exp-01-21",api_key=GOOGLE_API_KEY, temperature=1.0)
-
 #  tools
 async def search_interest_rates(ctx: Context, question: str) -> str: # type: ignore
     """Ask a question to the bank account interest rate documents stored in the vector index."""
@@ -117,64 +113,53 @@ async def overall_analysis(ctx: Context) -> str: # type: ignore
     return f"Overall analysis completed: {overall_analysis}"
 
 #  agents
-supervisor_agent = FunctionAgent(
-    name="SupervisorAgent",
-    description="""You are the supervisor agent that orchestrats the agents to answer a users question regarding interest rates, customer details, pending transactions and overall analysis of the bank account.
-    """,
-    system_prompt=(
-        """You have access to the below agents:
-        - InterestRatesAgent : This is a RAG agent that can search the bank account interest rate documents stored in the vector index. If the users question is related to the interest rates of the bank account like savings account, ISA account, etc.
-        - CustomerDetailsAgent : This is an agent that can search the bank customer database which contains customer information in a SQL database. If the users question is related to the customer details like balance, name, address, bank balance, etc.
-        - PendingTxAgent : This is a Pandas agent that can search the bank account pending transactions stored in a Pandas dataframe. If the users question is related to the pending transactions of the bank account like pending transactions amount, pending transactions date, etc.
-        - AnalystAgent : All the answers from the above agents *should be* passed to the AnalystAgent to get the final answer constructed.
-        """
-    ),
-    llm=llm,
-    tools=[],
-    can_handoff_to=["InterestRatesAgent", "CustomerDetailsAgent", "PendingTxAgent", "AnalystAgent"],
-)
 
 interest_rates_agent = FunctionAgent(
     name="InterestRatesAgent",
     description="This is a RAG agent that can search the bank account interest rate documents stored in the vector index.",
     system_prompt=(
-        "You are the RagAgent that can search the bank account interest rate documents stored in the vector index. "
+        """You are the Rag Agent that can search the bank account interest rate documents stored in the vector index. 
+       If the question is not related to interest rates, please handoff the question to the CustomerDetailsAgent."""
     ),
     llm=llm,
     tools=[search_interest_rates],
-    can_handoff_to=["SupervisorAgent"],
+    can_handoff_to=["CustomerDetailsAgent"],
 )
 
 customer_details_agent = FunctionAgent(
     name="CustomerDetailsAgent",
     description="This is an agent that can search the bank customer database which contains customer information in a SQL database.",
-    system_prompt="You are the CustomerDetailsAgent that can search the bank customer database which contains customer information in a SQL database.",
+    system_prompt="""You are the CustomerDetailsAgent that can search the bank customer database which contains customer information in a SQL database.
+        If the question is not related to customer details, please handoff the question to the PendingTxAgent.""",
     llm=llm,
     tools=[search_customer_details],
-    can_handoff_to=["SupervisorAgent"],
+    can_handoff_to=["PendingTxAgent"],
 )
 
 pending_tx_agent = FunctionAgent(
     name="PendingTxAgent",
     description="This is a Pandas agent that can search the bank account pending transactions stored in a Pandas dataframe.",
-    system_prompt="You have access to a Pandas dataframe that contains details of pending transactions for a customer.",
+    system_prompt="""You have access to a Pandas dataframe that contains details of pending transactions for a customer.
+    If the question is not related to pending transactions, please handoff the question to the SupervisorAgent.""",
     llm=llm,
     tools=[search_pending_tx_details_from_df],
     can_handoff_to=["SupervisorAgent"],
 )
 
-analyst_agent = FunctionAgent(
-    name="AnalystAgent",
-    description="This agent is responsible for constructing the final answer from the answers provided by the other agents.",
-    system_prompt="You have access to the answers provided by the other agents and you are responsible for constructing the final answer.",
+supervisor_agent = FunctionAgent(
+    name="SupervisorAgent",
+    description=""" You are the supervisor agent that prepaires the final answer from the answers provided by the other agents.""",
+    system_prompt=(
+        """As the supervisor agent, you are responsible for preparing the final answer from the answers provided by the other agents."""
+    ),
     llm=llm,
     tools=[overall_analysis],
-    can_handoff_to=["SupervisorAgent"],
+    can_handoff_to=[],
 )
 
 agent_workflow = AgentWorkflow(
-    agents=[supervisor_agent, interest_rates_agent, customer_details_agent, pending_tx_agent, analyst_agent],
-    root_agent=supervisor_agent.name,
+    agents=[interest_rates_agent, customer_details_agent, pending_tx_agent, supervisor_agent],
+    root_agent=interest_rates_agent.name,
     initial_state={
         "interest_rates": {},
         "customer_details": {},
