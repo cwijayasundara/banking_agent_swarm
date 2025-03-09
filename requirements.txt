@@ -7,3 +7,5 @@ python-dotenv
 streamlit
 sqlalchemy
 llama-index-experimental
+financetoolkit
+pandas

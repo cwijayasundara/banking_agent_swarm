@@ -8,16 +8,17 @@ load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-llm = Gemini(model="models/gemini-2.0-flash",api_key=GOOGLE_API_KEY)
+llm = Gemini(model="models/gemini-2.0-pro-exp-02-05",api_key=GOOGLE_API_KEY)
 
 df = pd.read_csv("docs/pending_tx.csv")
 
-query_engine = PandasQueryEngine(df=df, verbose=True)
+def create_pending_tx_query_engine():
+    query_engine = PandasQueryEngine(df=df, verbose=True)
+    return query_engine
 
 def get_pending_tx_details(query: str) -> float:
-    response = query_engine.query(
-        query    
-        )
+    query_engine = create_pending_tx_query_engine()
+    response = query_engine.query(query)
     return response
 
 # query = "What is the total amount of pending transactions for customer id C001 and round off to 2 decimal places?"

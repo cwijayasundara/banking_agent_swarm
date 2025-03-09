@@ -11,6 +11,7 @@ from llama_index.core.agent.workflow import AgentWorkflow
 from customer_db import create_banking_customer_db
 from pending_tx_agent import get_pending_tx_details
 import pandas as pd
+import streamlit as st
 
 today = datetime.now().strftime("%d/%m/%Y")
 
@@ -25,51 +26,40 @@ customer_db_query_engine = create_banking_customer_db()
 llm = Gemini(model="models/gemini-2.0-flash",api_key=GOOGLE_API_KEY)
 
 #  tools
-async def search_interest_rates(ctx: Context, question: str) -> str: # type: ignore
+async def search_interest_rates(ctx: Context, question: str) -> str:
     """Ask a question to the bank account interest rate documents stored in the vector index."""
-    
+    print("search interest rates RAG tool called")
     interest_rates = query_engine.query(question)
-    
     current_state = await ctx.get("state")
-
     # Store the interest rates in the state
     current_state["interest_rates"] = str(interest_rates)
-    
     await ctx.set("state", current_state)
-
     return f"Interest rates extracted for {question}: {interest_rates}"
 
-async def search_customer_details(ctx: Context, question: str) -> str: # type: ignore
+async def search_customer_details(ctx: Context, question: str) -> str:
     """Ask a question to the bank customer database which contains customer and account information in a SQL database."""
-    
+    print("search customer details SQL tool called")
     customer_details = customer_db_query_engine.query(question)
-
     current_state = await ctx.get("state")
-
     # Store the customer details in the state
     current_state["customer_details"] = str(customer_details)
-    
     await ctx.set("state", current_state)
-
     return f"Customer details extracted for {question}: {customer_details}"
 
-async def search_pending_tx_details_from_df(ctx: Context, question: str) -> str: # type: ignore
+async def search_pending_tx_details_from_df(ctx: Context, question: str) -> str:
     """Get the total amount of pending transactions for a customer from a Pandas dataframe."""
-
+    print("search pending tx details Pandas tool called")
     response = get_pending_tx_details(question)
-
     current_state = await ctx.get("state")
-
     # Store the pending transactions details in the state
     current_state["pending_tx_details"] = str(response)
-    
     await ctx.set("state", current_state)
-
     return f"Pending transactions details extracted for {question}: {response}"
 
 # TODO: Add the overall analysis tool
-async def overall_analysis(ctx: Context) -> str: # type: ignore
+async def overall_analysis(ctx: Context) -> str:
     """Get the overall analysis of the bank account for a customer from a Pandas dataframe."""
+    print("overall analysis tool called")
 
     current_state = await ctx.get("state")
     

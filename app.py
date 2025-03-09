@@ -11,6 +11,7 @@ from llama_index.core.agent.workflow import AgentWorkflow
 from customer_db import create_banking_customer_db
 from pending_tx_agent import get_pending_tx_details
 import pandas as pd
+# import streamlit as st
 
 today = datetime.now().strftime("%d/%m/%Y")
 
@@ -19,62 +20,45 @@ load_dotenv()
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 query_engine = get_query_engine()
-
 customer_db_query_engine = create_banking_customer_db()
 
 llm = Gemini(model="models/gemini-2.0-flash",api_key=GOOGLE_API_KEY)
 
-# llm_large = Gemini(model="models/gemini-2.0-pro-exp-02-05",api_key=GOOGLE_API_KEY)
-
-# llm_thinking = Gemini(model="models/gemini-2.0-flash-thinking-exp-01-21",api_key=GOOGLE_API_KEY, temperature=1.0)
-
 #  tools
-async def search_interest_rates(ctx: Context, question: str) -> str: # type: ignore
+async def search_interest_rates(ctx: Context, question: str) -> str:
     """Ask a question to the bank account interest rate documents stored in the vector index."""
-    
+    print("search interest rates tool called")
     interest_rates = query_engine.query(question)
-    
     current_state = await ctx.get("state")
-
     # Store the interest rates in the state
     current_state["interest_rates"] = str(interest_rates)
-    
     await ctx.set("state", current_state)
-
     return f"Interest rates extracted for {question}: {interest_rates}"
 
-async def search_customer_details(ctx: Context, question: str) -> str: # type: ignore
+async def search_customer_details(ctx: Context, question: str) -> str:
     """Ask a question to the bank customer database which contains customer and account information in a SQL database."""
-    
+    print("search customer details tool called")
     customer_details = customer_db_query_engine.query(question)
-
     current_state = await ctx.get("state")
-
     # Store the customer details in the state
     current_state["customer_details"] = str(customer_details)
-    
     await ctx.set("state", current_state)
-
     return f"Customer details extracted for {question}: {customer_details}"
 
-async def search_pending_tx_details_from_df(ctx: Context, question: str) -> str: # type: ignore
+async def search_pending_tx_details_from_df(ctx: Context, question: str) -> str:
     """Get the total amount of pending transactions for a customer from a Pandas dataframe."""
-
+    print("search pending tx details tool called")
     response = get_pending_tx_details(question)
-
     current_state = await ctx.get("state")
-
     # Store the pending transactions details in the state
     current_state["pending_tx_details"] = str(response)
-    
     await ctx.set("state", current_state)
-
     return f"Pending transactions details extracted for {question}: {response}"
 
 # TODO: Add the overall analysis tool
-async def overall_analysis(ctx: Context) -> str: # type: ignore
+async def overall_analysis(ctx: Context) -> str:
     """Get the overall analysis of the bank account for a customer from a Pandas dataframe."""
-
+    print("overall analysis tool called")
     current_state = await ctx.get("state")
     
     interest_rates = None
@@ -119,26 +103,25 @@ async def overall_analysis(ctx: Context) -> str: # type: ignore
 #  agents
 supervisor_agent = FunctionAgent(
     name="SupervisorAgent",
-    description="""You are the supervisor agent that orchestrats the agents to answer a users question regarding interest rates, customer details, pending transactions and overall analysis of the bank account.
-    """,
-    system_prompt=(
-        """You have access to the below agents:
-        - InterestRatesAgent : This is a RAG agent that can search the bank account interest rate documents stored in the vector index. If the users question is related to the interest rates of the bank account like savings account, ISA account, etc.
-        - CustomerDetailsAgent : This is an agent that can search the bank customer database which contains customer information in a SQL database. If the users question is related to the customer details like balance, name, address, bank balance, etc.
-        - PendingTxAgent : This is a Pandas agent that can search the bank account pending transactions stored in a Pandas dataframe. If the users question is related to the pending transactions of the bank account like pending transactions amount, pending transactions date, etc.
-        - AnalystAgent : All the answers from the above agents *should be* passed to the AnalystAgent to get the final answer constructed.
-        """
-    ),
+    description = """Provide an overall analysis of the financial situation of a banking customer based on the data from InterestRatesAgent,CustomerDetailsAgent and PendingTxAgent. """,
+    system_prompt = """You are an expert banking analyst and supervisor. You collect details coming from various agents such as InterestRatesAgent,CustomerDetailsAgent and PendingTxAgent."
+         Details of the agents that you have access to is as follows.
+         - InterestRatesAgent : This is a RAG agent that can search the bank account interest rate documents stored in the vector index. If the users question is related to the interest rates of the bank account like savings account, ISA account, etc.
+         - CustomerDetailsAgent : This is an agent that can search the bank customer database which contains customer information in a SQL database. If the users question is related to the customer details like balance, name, address, bank balance, etc.
+         - PendingTxAgent : This is a Pandas agent that can search the bank account pending transactions stored in a Pandas dataframe. If the users question is related to the pending transactions of the bank account like pending transactions amount, pending transactions date, etc.
+         You should select the right agent based on the users question and pass the question to the right agent.
+         If the user query is a complex query that needs to be answered by multiple agents, you should pass the question to all the agents and get the answers from all the agents.
+         """,
     llm=llm,
-    tools=[],
-    can_handoff_to=["InterestRatesAgent", "CustomerDetailsAgent", "PendingTxAgent", "AnalystAgent"],
+    tools=[overall_analysis],
+    can_handoff_to=["InterestRatesAgent", "CustomerDetailsAgent", "PendingTxAgent"],
 )
 
 interest_rates_agent = FunctionAgent(
     name="InterestRatesAgent",
-    description="This is a RAG agent that can search the bank account interest rate documents stored in the vector index.",
+    description="RAG agent that can search the bank account interest rate documents stored in the vector index.",
     system_prompt=(
-        "You are the RagAgent that can search the bank account interest rate documents stored in the vector index. "
+        """You are the RAG Agent that can search the bank account interest rate documents stored in the vector index. Do not answer any other questions except for the ones related to the interest rates of the bank account."""
     ),
     llm=llm,
     tools=[search_interest_rates],
@@ -147,8 +130,8 @@ interest_rates_agent = FunctionAgent(
 
 customer_details_agent = FunctionAgent(
     name="CustomerDetailsAgent",
-    description="This is an agent that can search the bank customer database which contains customer information in a SQL database.",
-    system_prompt="You are the CustomerDetailsAgent that can search the bank customer database which contains customer information in a SQL database.",
+    description="Agent that can search the bank customer database which contains customer information in a SQL database.",
+    system_prompt="You are the CustomerDetailsAgent that can search the bank customer database which contains customer information in a SQL database. Do not answer any other questions except for the ones related to the customer details of the bank account.",
     llm=llm,
     tools=[search_customer_details],
     can_handoff_to=["SupervisorAgent"],
@@ -156,24 +139,15 @@ customer_details_agent = FunctionAgent(
 
 pending_tx_agent = FunctionAgent(
     name="PendingTxAgent",
-    description="This is a Pandas agent that can search the bank account pending transactions stored in a Pandas dataframe.",
-    system_prompt="You have access to a Pandas dataframe that contains details of pending transactions for a customer.",
+    description="Pandas agent that can search the bank account pending transactions stored in a Pandas dataframe.",
+    system_prompt="You have access to a Pandas dataframe that contains details of pending transactions for a customer. Do not answer any other questions except for the ones related to the pending transactions of the bank account.",
     llm=llm,
     tools=[search_pending_tx_details_from_df],
     can_handoff_to=["SupervisorAgent"],
 )
 
-analyst_agent = FunctionAgent(
-    name="AnalystAgent",
-    description="This agent is responsible for constructing the final answer from the answers provided by the other agents.",
-    system_prompt="You have access to the answers provided by the other agents and you are responsible for constructing the final answer.",
-    llm=llm,
-    tools=[overall_analysis],
-    can_handoff_to=["SupervisorAgent"],
-)
-
 agent_workflow = AgentWorkflow(
-    agents=[supervisor_agent, interest_rates_agent, customer_details_agent, pending_tx_agent, analyst_agent],
+    agents=[supervisor_agent, interest_rates_agent, customer_details_agent, pending_tx_agent],
     root_agent=supervisor_agent.name,
     initial_state={
         "interest_rates": {},
@@ -200,3 +174,28 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# async def get_answer(query: str):
+#     response = await agent_workflow.run(user_msg=query, ctx=ctx)
+#     return response
+
+# st.title("Personal Banking Assistant")
+
+# with st.sidebar:
+#     st.image("image/image.jpg", width=800)
+
+# query = st.text_input("How can I help you today?")
+
+# st.write("sample questions:")
+# st.write("What is the total amount of pending transactions for customer id C001 and round off to 2 decimal places?")
+# st.write("Whats the Cash ISA Saver's annual interest rate for an account opened after 18/02/25? Todays date is " + today)
+# st.write("List all the details of Bob Brown?")
+
+# if st.button("Chat"):
+#     if query:
+#         with st.spinner("Thinking..."):
+#             # Use the helper function to run the async function
+#             response = asyncio.run(get_answer(query))
+#             st.write(response)
+#     else:
+#         st.warning("Please enter a query first.")
